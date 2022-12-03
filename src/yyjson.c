@@ -8174,6 +8174,49 @@ bool yyjson_mut_write_file(const char *path,
 #endif /* YYJSON_DISABLE_WRITER */
 
 
+int yyjson_check(const char *dat, size_t len) {
+    yyjson_doc *doc = yyjson_read(dat, len, 0);
+    if (doc) {
+        yyjson_doc_free(doc);
+        return 1;
+    }
+
+    return 0;
+}
+
+
+typedef struct yyjson_sized_alc_s {
+    yyjson_alc alc;
+    size_t size;
+    char buf[];
+} yyjson_sized_alc;
+
+
+
+void *yyjson_sized_alc_new(size_t size) {
+    yyjson_sized_alc *alc = malloc(sizeof(yyjson_sized_alc) + size);
+    alc->size = size;
+    return alc;
+}
+
+
+void yyjson_sized_alc_destory(void *alc) {
+    free(alc);
+}
+
+
+int yyjson_check_with_sized_alc(void *sized_alc, const char *dat, size_t len) {
+    yyjson_sized_alc *alc = sized_alc;
+    yyjson_alc_pool_init(&alc->alc, alc->buf, alc->size);
+
+    yyjson_doc *doc = yyjson_read_opts((char *)dat, len, 0, &alc->alc, NULL);
+    if (doc) {
+        return 1;
+    }
+
+    return 0;
+}
+
 
 /*==============================================================================
  * Compiler Hint End
